@@ -24,7 +24,7 @@ fi
 MAX_COUNT=9999
 
 mkstemp() { echo "mkstemp(/tmp/$1-XXXXXX)" | m4; }
-posix_random() { echo $(( $(od -An -tu -N3 /dev/urandom) % 9999 + 1 )); }
+posix_random() { echo $(( $(od -An -tu -N3 /dev/urandom) % ($1 + 1) )); }
 
 sort_file() {
     tmpfile=$(mkstemp tdsh-sort)
@@ -35,15 +35,14 @@ sort_file() {
 }
 
 generate_id() {
-    if [ "$(wc -l < "$file")" -lt $MAX_COUNT ]; then
-        x=$(posix_random $MAX_COUNT)
-    else
-        x=$(( $(posix_random $(( $(wc -l < "$file") - MAX_COUNT )) ) + MAX_COUNT + 1 ))
-    fi
-    
+    x="1"
     while grep -q "^$x" "$file"; do
         # pick another id until there are no lines that begin with the id
-        x=$(posix_random $MAX_COUNT)
+        if [ "$(wc -l < "$file")" -lt $MAX_COUNT ]; then
+            x=$(posix_random $MAX_COUNT)
+        else
+            x=$(( $(posix_random $(( $(wc -l < "$file") - MAX_COUNT )) ) + MAX_COUNT + 1 ))
+        fi
     done
     
     echo "$x"
@@ -131,7 +130,7 @@ main() {
                            echo "-a task      | Add task <task> into the list"
                            echo "<non-number> | same as -a"
                            echo "-e id text   | change the text of task #<id> to <text>"
-                           echo "-e id sedstr | use the \`sed s<sedstr>' command on task #<id>"
+                           echo "-e id sedstr | use the \`sed s<sedstr>\` command on task #<id>"
                            echo "-h or --help | show this help"
                            echo "-v           | show the version of $progname"
                            echo "--version    | same as -v";;
